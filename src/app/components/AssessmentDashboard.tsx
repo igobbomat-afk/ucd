@@ -583,6 +583,15 @@ export function AssessmentDashboard({
 
 // ── ScoringTable ──────────────────────────────────────────────────────────────
 
+// Proficiency colour map for the mobile select indicator
+const PROFICIENCY_COLORS: Record<number, string> = {
+  1: '#1DB8F2',
+  2: '#00D5D0',
+  3: '#FEB100',
+  4: '#FF816E',
+  5: '#71609E',
+};
+
 interface ScoringTableProps {
   title: string;
   subtitle: string;
@@ -614,8 +623,8 @@ function ScoringTable({
         </div>
       </div>
 
-      {/* Column headers */}
-      <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: '2fr repeat(5, 1fr) auto' }}>
+      {/* Column headers — desktop only */}
+      <div className="hidden sm:grid border-b border-gray-100" style={{ gridTemplateColumns: '2fr repeat(5, 1fr) auto' }}>
         <div className="px-5 py-3 bg-gray-50 border-r border-gray-100">
           <span className="text-gray-500 uppercase tracking-wider" style={{ fontSize: '10px' }}>Competency</span>
         </div>
@@ -666,65 +675,76 @@ function ScoringRow({ index, competency, entry, onRatingChange, onNotesChange, a
   const [expanded, setExpanded] = useState(false);
   const isAssessed = entry.rating > 0;
   const selectedProf = isAssessed ? getProficiencyOption(entry.rating) : null;
+  const selectedColor = isAssessed ? PROFICIENCY_COLORS[entry.rating] : null;
 
   return (
     <div className={`${isAssessed ? accentLight + '/30' : ''} transition-colors`}>
-      {/* Main row */}
-      <div className="grid items-center" style={{ gridTemplateColumns: '2fr repeat(5, 1fr) auto' }}>
 
-        {/* Competency name + description */}
-        <div className="px-5 py-4 border-r border-gray-100 flex items-start gap-3">
+      {/* ── Mobile layout: dropdown select ──────────────────────────────── */}
+      <div className="sm:hidden px-4 py-3">
+        <div className="flex items-start gap-3">
+          {/* Badge */}
           <span
             className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 ${isAssessed ? 'text-white' : 'bg-gray-100 text-gray-400'}`}
             style={isAssessed ? { backgroundColor: '#0058AB', fontSize: '11px' } : { fontSize: '11px' }}
           >
             {isAssessed ? <Check className="w-3 h-3" /> : index}
           </span>
-          <div className="min-w-0 flex-1">
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
             <div className="text-gray-900" style={{ fontSize: '13px', fontWeight: 500 }}>{competency.name}</div>
             {expanded ? (
               <p className="text-gray-400 mt-1 leading-relaxed" style={{ fontSize: '12px' }}>{competency.description}</p>
             ) : (
-              <p className="text-gray-400 mt-0.5 line-clamp-1" style={{ fontSize: '12px' }}>{competency.description}</p>
+              <p className="text-gray-400 mt-0.5 line-clamp-2" style={{ fontSize: '12px' }}>{competency.description}</p>
             )}
             <button
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-0.5 text-gray-400 hover:text-gray-600 mt-1 transition"
+              className="flex items-center gap-0.5 text-gray-400 hover:text-gray-600 mt-0.5 transition"
               style={{ fontSize: '11px' }}
             >
               {expanded ? <><ChevronUp className="w-3 h-3" /> Show less</> : <><ChevronDown className="w-3 h-3" /> Show more</>}
             </button>
-          </div>
-        </div>
 
-        {/* Proficiency cells */}
-        {PROFICIENCY_OPTIONS.map((opt) => {
-          const isActive = entry.rating === opt.value;
-          return (
-            <div
-              key={opt.value}
-              onClick={() => onRatingChange(isActive ? (0 as ProficiencyLevel) : opt.value)}
-              className={`border-r border-gray-100 flex items-center justify-center cursor-pointer py-4 transition-all ${
-                isActive ? opt.cellActiveClass : `${opt.cellHoverClass} hover:opacity-80`
-              }`}
-              title={opt.description}
-            >
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                isActive
-                  ? `${opt.dotClass} border-transparent`
-                  : 'border-gray-300 bg-white'
-              }`}>
-                {isActive && <Check className="w-3 h-3 text-white" />}
+            {/* Dropdown */}
+            <div className="relative mt-2">
+              <select
+                value={entry.rating}
+                onChange={(e) => onRatingChange(Number(e.target.value) as ProficiencyLevel)}
+                className="w-full appearance-none pl-3 pr-8 py-2 rounded-lg border bg-white focus:outline-none transition"
+                style={{
+                  fontSize: '13px',
+                  borderColor: selectedColor ?? '#e5e7eb',
+                  borderWidth: selectedColor ? '2px' : '1px',
+                  color: selectedColor ?? '#6b7280',
+                  boxShadow: selectedColor ? `0 0 0 2px ${selectedColor}22` : undefined,
+                }}
+              >
+                <option value={0}>Not assessed</option>
+                {PROFICIENCY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {/* Custom chevron */}
+              <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
               </div>
+              {/* Colour dot */}
+              {selectedColor && (
+                <div
+                  className="pointer-events-none absolute inset-y-0 right-7 flex items-center"
+                >
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedColor }} />
+                </div>
+              )}
             </div>
-          );
-        })}
+          </div>
 
-        {/* Notes toggle */}
-        <div className="flex items-center justify-center py-4 px-2">
+          {/* Notes toggle */}
           <button
             onClick={() => setShowNotes(!showNotes)}
-            className={`relative p-2 rounded-lg transition ${
+            className={`shrink-0 relative p-2 rounded-lg transition mt-0.5 ${
               showNotes ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
             }`}
             title="Add notes"
@@ -735,31 +755,119 @@ function ScoringRow({ index, competency, entry, onRatingChange, onNotesChange, a
             )}
           </button>
         </div>
-      </div>
 
-      {/* Notes expandable panel */}
-      {showNotes && (
-        <div className="px-5 pb-4 pt-1 border-t border-gray-100 bg-gray-50">
-          <label className="block text-gray-500 mb-1.5" style={{ fontSize: '11px' }}>
-            Notes / Evidence for <strong>{competency.name}</strong>
-          </label>
-          <div className="flex items-start gap-3">
+        {/* Notes panel – mobile */}
+        {showNotes && (
+          <div className="mt-2 ml-9 px-3 py-3 bg-gray-50 rounded-lg border border-gray-200">
+            <label className="block text-gray-500 mb-1.5" style={{ fontSize: '11px' }}>
+              Notes / Evidence
+            </label>
             <textarea
               rows={3}
               value={entry.notes}
               onChange={(e) => onNotesChange(e.target.value)}
-              placeholder="Add context, examples, or evidence to support your self-assessment…"
-              className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#1d365a]/20 focus:border-[#1d365a]/50 transition"
+              placeholder="Add context, examples, or evidence…"
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#1d365a]/20 focus:border-[#1d365a]/50 transition"
               style={{ fontSize: '12px' }}
             />
-            {selectedProf && (
-              <div className={`shrink-0 px-3 py-1.5 rounded-full border ${selectedProf.headerClass} mt-1`} style={{ fontSize: '11px' }}>
-                {selectedProf.label}
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop layout: grid with radio cells ───────────────────────── */}
+      <div className="hidden sm:block">
+        <div className="grid items-center" style={{ gridTemplateColumns: '2fr repeat(5, 1fr) auto' }}>
+
+          {/* Competency name + description */}
+          <div className="px-5 py-4 border-r border-gray-100 flex items-start gap-3">
+            <span
+              className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 ${isAssessed ? 'text-white' : 'bg-gray-100 text-gray-400'}`}
+              style={isAssessed ? { backgroundColor: '#0058AB', fontSize: '11px' } : { fontSize: '11px' }}
+            >
+              {isAssessed ? <Check className="w-3 h-3" /> : index}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-gray-900" style={{ fontSize: '13px', fontWeight: 500 }}>{competency.name}</div>
+              {expanded ? (
+                <p className="text-gray-400 mt-1 leading-relaxed" style={{ fontSize: '12px' }}>{competency.description}</p>
+              ) : (
+                <p className="text-gray-400 mt-0.5 line-clamp-1" style={{ fontSize: '12px' }}>{competency.description}</p>
+              )}
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="flex items-center gap-0.5 text-gray-400 hover:text-gray-600 mt-1 transition"
+                style={{ fontSize: '11px' }}
+              >
+                {expanded ? <><ChevronUp className="w-3 h-3" /> Show less</> : <><ChevronDown className="w-3 h-3" /> Show more</>}
+              </button>
+            </div>
+          </div>
+
+          {/* Proficiency cells */}
+          {PROFICIENCY_OPTIONS.map((opt) => {
+            const isActive = entry.rating === opt.value;
+            return (
+              <div
+                key={opt.value}
+                onClick={() => onRatingChange(isActive ? (0 as ProficiencyLevel) : opt.value)}
+                className={`border-r border-gray-100 flex items-center justify-center cursor-pointer py-4 transition-all ${
+                  isActive ? opt.cellActiveClass : `${opt.cellHoverClass} hover:opacity-80`
+                }`}
+                title={opt.description}
+              >
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                  isActive
+                    ? `${opt.dotClass} border-transparent`
+                    : 'border-gray-300 bg-white'
+                }`}>
+                  {isActive && <Check className="w-3 h-3 text-white" />}
+                </div>
               </div>
-            )}
+            );
+          })}
+
+          {/* Notes toggle */}
+          <div className="flex items-center justify-center py-4 px-2">
+            <button
+              onClick={() => setShowNotes(!showNotes)}
+              className={`relative p-2 rounded-lg transition ${
+                showNotes ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+              title="Add notes"
+            >
+              <MessageSquare className="w-4 h-4" />
+              {entry.notes && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#1d365a]" />
+              )}
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Notes expandable panel — desktop */}
+        {showNotes && (
+          <div className="px-5 pb-4 pt-1 border-t border-gray-100 bg-gray-50">
+            <label className="block text-gray-500 mb-1.5" style={{ fontSize: '11px' }}>
+              Notes / Evidence for <strong>{competency.name}</strong>
+            </label>
+            <div className="flex items-start gap-3">
+              <textarea
+                rows={3}
+                value={entry.notes}
+                onChange={(e) => onNotesChange(e.target.value)}
+                placeholder="Add context, examples, or evidence to support your self-assessment…"
+                className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#1d365a]/20 focus:border-[#1d365a]/50 transition"
+                style={{ fontSize: '12px' }}
+              />
+              {selectedProf && (
+                <div className={`shrink-0 px-3 py-1.5 rounded-full border ${selectedProf.headerClass} mt-1`} style={{ fontSize: '11px' }}>
+                  {selectedProf.label}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
