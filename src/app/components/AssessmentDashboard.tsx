@@ -18,8 +18,8 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import logo from 'src/assets/9606a0e21a211ee2a0fb83b6ddc5e74e18e893c0.png';
-import gradientBar from 'src/assets/8ea69a91d33ff336ca85ce7c076d9bd46d3972d3.png';
+import logo from '@/assets/9606a0e21a211ee2a0fb83b6ddc5e74e18e893c0.png';
+import gradientBar from '@/assets/8ea69a91d33ff336ca85ce7c076d9bd46d3972d3.png';
 import {
   CORE_COMPETENCIES,
   PROFICIENCY_OPTIONS,
