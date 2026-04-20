@@ -1,4 +1,4 @@
-export type Grade = 'C2' | 'C3' | 'C4';
+export type Grade = 'C1' | 'C2' | 'C3' | 'C4';
 export type ProficiencyLevel = 0 | 1 | 2 | 3 | 4 | 5;
 
 export interface Competency {
@@ -7,13 +7,22 @@ export interface Competency {
   description: string;
 }
 
+export interface CompetencyGroup {
+  id: string;
+  name: string;
+  summary: string;
+  components: Competency[];
+}
+
 export interface Role {
   id: string;
   title: string;
   grade: Grade;
   discipline: string;
   description: string;
+  isUR?: boolean;
   disciplineCompetencies: Competency[];
+  competencyGroups?: CompetencyGroup[];
 }
 
 export interface ProficiencyOption {
@@ -75,6 +84,7 @@ export const PROFICIENCY_OPTIONS: ProficiencyOption[] = [
 ];
 
 export const CORE_COMPETENCIES: Record<Grade, Competency[]> = {
+  C1: [], // User Research uses competencyGroups instead of shared core UCD competencies
   C2: [
     {
       id: 'c2-accessibility',
@@ -732,9 +742,300 @@ export const ROLES: Role[] = [
       },
     ],
   },
+
+  // ── User Research ─────────────────────────────────────────────────────────
+  {
+    id: 'ur-c1',
+    title: 'User Researcher',
+    grade: 'C1',
+    discipline: 'User Research',
+    description:
+      'As a C1 User Researcher at Capgemini Invent, you contribute reliably to research programmes under the guidance of more senior researchers. You apply user research methods in familiar contexts, run sessions using agreed approaches, and support analysis and communication of findings. You work within established processes and actively develop your research practice across seven core competency areas.',
+    isUR: true,
+    disciplineCompetencies: [],
+    competencyGroups: [
+      {
+        id: 'ur-c1-g1',
+        name: 'Research Delivery (Methods & Sessions)',
+        summary: 'Delivering user research activities to a good standard, using agreed approaches, and contributing reliably to a wider research programme.',
+        components: [
+          { id: 'ur-c1-g1-c1', name: 'Research method application', description: 'Applying qualitative and quantitative methods such as interviews, usability testing, or surveys in line with research goals. Able to explain why a method is being used and what kind of insight it is intended to produce (e.g. attitudinal vs behavioural, generative vs evaluative). Adjusting approach within sessions when needed.' },
+          { id: 'ur-c1-g1-c2', name: 'Session moderation', description: 'Moderating interviews or usability tests independently using a provided discussion guide. Managing session flow, time, and transitions without intervention. Responding calmly and appropriately to unexpected issues during sessions.' },
+          { id: 'ur-c1-g1-c3', name: 'Delivery standards & compliance', description: 'Applying consent, safeguarding, and recording processes consistently across sessions. Following agreed approaches to recruitment, data handling, and documentation without needing step-by-step instruction. Recognising when a situation falls outside agreed standards and flagging it.' },
+          { id: 'ur-c1-g1-c4', name: 'Research logistics & preparation', description: 'Preparing research materials in advance and ensuring they are ready for use. Supporting scheduling and logistics for multiple sessions. Identifying practical delivery risks early and escalating appropriately.' },
+          { id: 'ur-c1-g1-c5', name: 'Collaborative research delivery', description: 'Sharing clear and relevant observations with the research lead after sessions. Taking on responsibility for specific delivery tasks within a research programme. Incorporating feedback between sessions to improve delivery quality or consistency.' },
+        ],
+      },
+      {
+        id: 'ur-c1-g2',
+        name: 'Analysis & Sense-Making',
+        summary: 'Making sense of user research data, identifying meaningful patterns, and contributing to clear, evidence-based insights with guidance.',
+        components: [
+          { id: 'ur-c1-g2-c1', name: 'Data capture for analysis', description: 'Producing clear, structured notes from interviews or usability tests that reflect what participants said and did. Recording observations accurately and consistently. Distinguishing between participant behaviour, opinion, and researcher interpretation.' },
+          { id: 'ur-c1-g2-c2', name: 'Collaborative analysis participation', description: 'Taking part in collaborative analysis sessions such as tagging notes, grouping observations, and affinity mapping. Identifying repeated issues, behaviours, or needs across sessions. Sense-checking understanding with others when patterns are unclear.' },
+          { id: 'ur-c1-g2-c3', name: 'Developing insights with support', description: 'Suggesting possible themes or problem statements based on patterns in the data. Articulating why a finding matters to users or the service, not just what was observed. Testing early interpretations with more senior researchers to validate or refine them.' },
+          { id: 'ur-c1-g2-c4', name: 'Evidence-based conclusions', description: 'Linking observations back to specific sessions or user quotes when discussing findings. Helping ensure insights are grounded in evidence rather than assumptions or personal opinion. Noticing when evidence is thin or inconsistent and flagging this to the team.' },
+          { id: 'ur-c1-g2-c5', name: 'Shaping usable outputs', description: 'Drafting sections of findings summaries or insight slides for review. Helping refine wording so findings are clear, accurate, and focused. Responding constructively to feedback on analysis and applying it in later work.' },
+        ],
+      },
+      {
+        id: 'ur-c1-g3',
+        name: 'Communication of Research',
+        summary: 'Communicating research purpose, progress, and findings clearly and credibly so that teams can understand and use evidence in decision-making.',
+        components: [
+          { id: 'ur-c1-g3-c1', name: 'Explaining research to audiences', description: 'Explaining the purpose of research, methods used, and what was explored when speaking with non-researchers. Answering basic questions about research activity. Adjusting language to suit the audience and avoiding jargon where it is not helpful.' },
+          { id: 'ur-c1-g3-c2', name: 'Sharing findings in team settings', description: 'Talking through key findings in show-and-tells, playbacks, or team meetings. Structuring updates so that key points are clear and easy to follow. Highlighting what is most important rather than listing everything learned.' },
+          { id: 'ur-c1-g3-c3', name: 'Creating clear research outputs', description: 'Producing slides, summaries, or insight write-ups using agreed templates, including appropriate use of frameworks like personas. Writing findings that reflect the evidence and avoid over-interpretation. Incorporating feedback to improve clarity and structure.' },
+          { id: 'ur-c1-g3-c4', name: 'Engaging teams with evidence', description: 'Referring back to user evidence when discussing design or delivery decisions. Clarifying what research does or does not show when questions arise. Helping teammates connect research findings to ongoing work or next steps.' },
+          { id: 'ur-c1-g3-c5', name: 'Building credibility through communication', description: 'Speaking confidently about research they were involved in, even when findings are still developing. Acknowledging uncertainty or limitations in the research when appropriate. Responding constructively to questions or challenge, with support if needed.' },
+        ],
+      },
+      {
+        id: 'ur-c1-g4',
+        name: 'Team Collaboration & Multidisciplinary Working',
+        summary: 'Working effectively within multidisciplinary delivery teams, contributing research perspective, and supporting shared outcomes.',
+        components: [
+          { id: 'ur-c1-g4-c1', name: 'Cross-disciplinary collaboration', description: 'Working day-to-day with designers, developers, delivery managers, business analysts, performance analysts, or policy colleagues. Taking part in sprint events such as stand-ups, planning, and retrospectives. Adapting ways of working to fit different team contexts.' },
+          { id: 'ur-c1-g4-c2', name: 'Bringing research into discussions', description: 'Sharing user observations or evidence at relevant points in conversations. Helping the team understand user needs or pain points based on recent research. Asking questions that help link design or delivery decisions back to user evidence.' },
+          { id: 'ur-c1-g4-c3', name: 'Active participation in team activities', description: 'Supporting workshops or meetings by note-taking, time-keeping, or managing activities. Helping structure or run small breakout activities with guidance. Contributing ideas or reflections during collaborative sessions.' },
+          { id: 'ur-c1-g4-c4', name: 'Contributing to team culture', description: 'Sharing ideas or concerns in a respectful and constructive way. Listening to different viewpoints and being open to challenge or feedback. Managing disagreements professionally, with support where needed.' },
+          { id: 'ur-c1-g4-c5', name: 'Dependable ways of working', description: 'Taking responsibility for agreed actions and following through. Communicating clearly if work is at risk, blocked, or delayed. Adjusting priorities to support team needs under guidance.' },
+        ],
+      },
+      {
+        id: 'ur-c1-g5',
+        name: 'Ethical & Inclusive Research Practice',
+        summary: 'Conducting user research responsibly, inclusively, and in line with ethical, legal, and organisational standards.',
+        components: [
+          { id: 'ur-c1-g5-c1', name: 'Ethical research conduct', description: 'Using approved consent approaches and ensuring participants understand what they are taking part in. Being mindful of participant wellbeing during sessions and adjusting approach if someone becomes uncomfortable. Recognising when research activities involve sensitive topics, vulnerability, or potential risk.' },
+          { id: 'ur-c1-g5-c2', name: 'Participant data management', description: 'Storing recordings, notes, and personal data in line with agreed data-handling guidance. Using only approved tools and locations for sharing or storing research outputs. Being careful about what participant information is shared, and with whom.' },
+          { id: 'ur-c1-g5-c3', name: 'Inclusive research practice', description: 'Supporting inclusive recruitment approaches considering accessibility needs or participant circumstances. Adapting research materials or sessions with guidance. Raising accessibility or inclusion considerations during planning or delivery discussions.' },
+          { id: 'ur-c1-g5-c4', name: 'Ethical awareness & action', description: 'Flagging concerns about consent, safeguarding, or data use to a more senior researcher. Checking before proceeding if a situation falls outside agreed processes. Pausing or adjusting research activity when ethical concerns arise.' },
+          { id: 'ur-c1-g5-c5', name: 'Bias & assumptions awareness', description: 'Reflecting on how personal assumptions might influence interpretation or behaviour during sessions. Being open to challenge or alternative interpretations from others. Acknowledging limitations in research findings due to sample, method, or context.' },
+        ],
+      },
+      {
+        id: 'ur-c1-g6',
+        name: 'Professionalism & Ways of Working',
+        summary: "Working in a reliable, organised, and professional way within Capgemini or a client's delivery environment.",
+        components: [
+          { id: 'ur-c1-g6-c1', name: 'Day-to-day reliability', description: 'Managing own tasks and time to meet agreed deadlines. Communicating early if work is blocked, delayed, or at risk. Balancing multiple pieces of work with guidance and support when priorities shift.' },
+          { id: 'ur-c1-g6-c2', name: 'Working within established processes', description: 'Using agreed templates and formats for research outputs and documentation. Following delivery, reporting, and approval processes without needing close oversight. Keeping work organised so others can easily find or pick it up.' },
+          { id: 'ur-c1-g6-c3', name: 'Quality and accuracy', description: 'Checking work for errors or omissions before sharing. Responding to feedback to improve clarity, structure, or quality. Taking pride in producing work that reflects well on the team and organisation.' },
+          { id: 'ur-c1-g6-c4', name: 'Sound professional judgement', description: 'Knowing when to proceed independently and when to ask for guidance. Recognising situations that could have delivery, reputational, or client impact and flagging them. Handling sensitive information or situations with discretion.' },
+          { id: 'ur-c1-g6-c5', name: 'Responsible use of tools & AI', description: 'Using AI tools to support efficiency or quality while following organisational guidance. Being transparent about where tools have been used in their work. Checking outputs for accuracy, bias, or risk before sharing.' },
+        ],
+      },
+      {
+        id: 'ur-c1-g7',
+        name: 'Commercial & Organisational Awareness',
+        summary: 'Understanding the delivery, commercial, and organisational context of work, and contributing appropriately within a consulting environment.',
+        components: [
+          { id: 'ur-c1-g7-c1', name: 'Understanding project context', description: 'Understanding the overall goals of the project and how research contributes to them. Being aware of who the client stakeholders are and how the team interacts with them. Recognising differences between client, supplier, and internal perspectives.' },
+          { id: 'ur-c1-g7-c2', name: 'Time, scope & delivery awareness', description: 'Being mindful of timelines and scope when planning or delivering research activity. Recognising when requests or changes may impact time or budget and flagging this to others. Prioritising work in line with agreed delivery expectations.' },
+          { id: 'ur-c1-g7-c3', name: 'Internal contribution', description: 'Providing accurate and timely information to support internal processes such as CV updates and timesheets. Supporting internal reporting or assurance activities when asked. Building foundational knowledge of internal processes and taking part in internal initiatives.' },
+          { id: 'ur-c1-g7-c4', name: 'Spotting issues & opportunities', description: 'Flagging delivery risks or dependencies that could impact research or project outcomes. Spotting opportunities to reuse learning, assets, or approaches across work. Raising potential follow-on work or unmet client needs to more senior colleagues.' },
+          { id: 'ur-c1-g7-c5', name: 'Reflecting Capgemini values', description: 'Communicating professionally with clients and internal stakeholders. Following organisational policies, processes, and standards. Being mindful of how behaviour and outputs reflect on the team and organisation.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'ur-c2',
+    title: 'User Researcher',
+    grade: 'C2',
+    discipline: 'User Research',
+    description:
+      'As a C2 User Researcher at Capgemini Invent, you independently deliver research sessions to a high standard, tailoring plans to context and keeping research delivery on track across a small workstream or sprint cycle. You move confidently from data to defensible insights and communicate findings clearly to teams and stakeholders. You are assessed across seven core competency areas specific to user research.',
+    isUR: true,
+    disciplineCompetencies: [],
+    competencyGroups: [
+      {
+        id: 'ur-c2-g1',
+        name: 'Research Delivery (Methods & Sessions)',
+        summary: 'Independently delivering research sessions to a high standard, tailoring plans to context, and helping keep research delivery on track across a small workstream or sprint cycle.',
+        components: [
+          { id: 'ur-c2-g1-c1', name: 'Method selection & rationale', description: "Recommending appropriate methods based on research goals (e.g. attitudinal vs behavioural, generative vs evaluative). Shaping a lightweight approach when time is limited. Explaining trade-offs in method choice and adjusting the plan with the lead's input." },
+          { id: 'ur-c2-g1-c2', name: 'Discussion guide adaptation', description: 'Improving existing topic guides so questions are clearer, flow better, and map to research objectives. Tailoring tasks or prompts to match the prototype or service being tested. Piloting guides and making quick refinements before sessions.' },
+          { id: 'ur-c2-g1-c3', name: 'Confident end-to-end session delivery', description: 'Running sessions end-to-end while probing appropriately when important themes emerge. Handling tricky dynamics professionally such as dominant stakeholder observers, participants going off-topic, or sensitive moments. Adjusting moderation style to user needs.' },
+          { id: 'ur-c2-g1-c4', name: 'Delivery ownership & risk management', description: 'Coordinating blocks of sessions including scheduling, logistics, materials readiness, and managing observers. Monitoring recruitment quality and acting when it is off. Spotting delivery risks early such as prototype instability or shifting scope, and proposing mitigations.' },
+          { id: 'ur-c2-g1-c5', name: 'Delivery standards & team support', description: 'Keeping consent, recording, and documentation consistent across sessions, especially when multiple researchers are involved. Reviewing session notes from others and suggesting improvements. Supporting junior researchers to moderate sessions through pre-briefing and feedback.' },
+        ],
+      },
+      {
+        id: 'ur-c2-g2',
+        name: 'Analysis & Sense-Making',
+        summary: 'Analysing research data with increasing independence, identifying meaningful patterns and insights, and shaping evidence-based findings that teams can act on.',
+        components: [
+          { id: 'ur-c2-g2-c1', name: 'Structured data capture', description: 'Producing structured notes that highlight key behaviours, quotes, and moments of interest rather than verbatim transcription. Noting emerging patterns or hypotheses directly within notes. Maintaining consistency in how observations are recorded across multiple sessions or researchers.' },
+          { id: 'ur-c2-g2-c2', name: 'Active analysis facilitation', description: 'Facilitating or co-facilitating group analysis activities such as affinity mapping, clustering, and thematic review. Grouping observations into meaningful categories and explaining the rationale. Helping the team move from a large volume of data to a focused set of themes.' },
+          { id: 'ur-c2-g2-c3', name: 'Developing defensible insights', description: 'Framing insights that clearly describe underlying user needs, problems, or behaviours. Explaining why an insight matters in relation to user goals, service outcomes, or delivery decisions. Validating interpretations by checking against the data, including comparing qualitative themes with supporting quantitative indicators.' },
+          { id: 'ur-c2-g2-c4', name: 'Thoughtful use of evidence', description: 'Clearly linking insights back to multiple pieces of supporting evidence. Calling out where findings are indicative rather than conclusive. Highlighting the limits of available evidence, such as small sample sizes, low survey response rates, or directional rather than statistically robust trends.' },
+          { id: 'ur-c2-g2-c5', name: 'Turning analysis into usable findings', description: 'Drafting insight statements or findings that are concise, well-structured, and grounded in evidence. Refining findings based on feedback to improve clarity, accuracy, or relevance. Helping ensure findings are prioritised and framed in a way that supports decision-making.' },
+        ],
+      },
+      {
+        id: 'ur-c2-g3',
+        name: 'Communication of Research',
+        summary: 'Communicating research purpose, process, and findings clearly and confidently so that teams and stakeholders can understand, trust, and use research evidence.',
+        components: [
+          { id: 'ur-c2-g3-c1', name: 'Explaining research goals & methods', description: 'Describing the goals, scope, and methods of a piece of research to team members or stakeholders. Explaining why methods were chosen, including constraints or trade-offs. Clarifying what research will and will not be able to answer at a given stage.' },
+          { id: 'ur-c2-g3-c2', name: 'Structured & engaging communication', description: 'Presenting key findings or insights in show-and-tells, playbacks, or workshops with little preparation support. Structuring communication so audiences can quickly grasp what was learned and why it matters. Tailoring the level of detail and language to suit different audiences.' },
+          { id: 'ur-c2-g3-c3', name: 'Creating research artefacts', description: 'Producing insight summaries or slide decks that clearly articulate findings and supporting evidence. Writing in a concise, plain-English style that avoids unnecessary jargon. Organising outputs so they are easy to navigate and reuse by others.' },
+          { id: 'ur-c2-g3-c4', name: 'Helping teams use evidence', description: 'Referring back to research findings during design or delivery discussions. Clarifying what the evidence suggests when different interpretations arise. Helping the team understand the implications or limitations of findings in decision-making contexts.' },
+          { id: 'ur-c2-g3-c5', name: 'Professional & transparent communication', description: 'Confidently answering questions about research findings and their basis in evidence. Acknowledging uncertainty, gaps, or limitations in the research when appropriate. Responding constructively to challenge or critique, with support from more senior colleagues where needed.' },
+        ],
+      },
+      {
+        id: 'ur-c2-g4',
+        name: 'Team Collaboration & Multidisciplinary Working',
+        summary: 'Working confidently and constructively within multidisciplinary teams, contributing research perspective, and supporting effective collaboration across delivery activities.',
+        components: [
+          { id: 'ur-c2-g4-c1', name: 'Confident cross-disciplinary collaboration', description: 'Working closely with designers, developers, delivery managers, business analysts, performance analysts, or policy colleagues on shared goals. Actively contributing to team rituals such as stand-ups, planning sessions, and retrospectives. Adapting communication and working style to suit different team dynamics.' },
+          { id: 'ur-c2-g4-c2', name: 'Bringing research into team discussions', description: 'Sharing relevant user evidence to help inform design or delivery decisions. Asking questions that help the team consider user needs, behaviours, or constraints. Helping clarify how recent research insights relate to current work or priorities.' },
+          { id: 'ur-c2-g4-c3', name: 'Active workshop participation', description: 'Supporting the planning and running of workshops with guidance, such as helping structure activities and time-box discussions. Leading parts of collaborative sessions such as small group discussions or playback moments. Adapting facilitation approach in response to how sessions are going.' },
+          { id: 'ur-c2-g4-c4', name: 'Constructive conflict resolution', description: 'Engaging in healthy debate while remaining respectful and open to other perspectives. Using research evidence to help navigate disagreements or uncertainty. Recognising when to escalate issues or seek support to resolve blockers.' },
+          { id: 'ur-c2-g4-c5', name: 'Ownership & team support', description: 'Taking ownership of agreed actions and seeing them through. Keeping others informed about progress, risks, or changes that affect the team. Stepping in to support teammates when delivery pressures increase.' },
+        ],
+      },
+      {
+        id: 'ur-c2-g5',
+        name: 'Ethical & Inclusive Research Practice',
+        summary: 'Conducting user research responsibly, inclusively, and in line with ethical, legal, and organisational standards.',
+        components: [
+          { id: 'ur-c2-g5-c1', name: 'Confident ethical practice', description: 'Ensuring participants fully understand the purpose of the research and what participation involves. Adjusting approach during sessions to protect participant wellbeing. Anticipating ethical sensitivities based on the research topic, user group, or context.' },
+          { id: 'ur-c2-g5-c2', name: 'Data governance & compliance', description: 'Applying agreed data handling, storage, and access controls consistently across a piece of work. Being mindful of how personal or sensitive information is recorded, shared, and referenced in outputs. Spotting potential data-handling risks and raising them early.' },
+          { id: 'ur-c2-g5-c3', name: 'Inclusion & accessibility', description: 'Factoring accessibility or participation needs into recruitment, materials, or session design. Adapting research approaches to accommodate different user needs with guidance. Encouraging teams to consider whose perspectives may be missing or under-represented.' },
+          { id: 'ur-c2-g5-c4', name: 'Ethical judgement & action', description: 'Recognising when research activity moves outside agreed ethical or governance parameters. Pausing, adapting, or escalating research activity when ethical concerns arise. Seeking advice or escalation appropriately rather than proceeding with uncertainty.' },
+          { id: 'ur-c2-g5-c5', name: 'Reflective research practice', description: 'Considering how personal assumptions or framing could influence interpretation. Acknowledging limitations in samples, methods, or evidence when discussing findings. Encouraging critical discussion of findings within the team to avoid over-claiming.' },
+        ],
+      },
+      {
+        id: 'ur-c2-g6',
+        name: 'Professionalism & Ways of Working',
+        summary: 'Managing own work with confidence and reliability, applying sound professional judgement, and maintaining delivery quality within Capgemini ways of working.',
+        components: [
+          { id: 'ur-c2-g6-c1', name: 'Independent workload management', description: 'Managing own workload across multiple tasks or workstreams with minimal prompting. Re-prioritising work in response to changing delivery needs and deadlines. Communicating early and clearly when work is at risk, blocked, or dependent on others.' },
+          { id: 'ur-c2-g6-c2', name: 'Delivery using standards & tools', description: 'Using agreed tools, templates, and standards without close oversight. Ensuring work is documented and organised so others can easily follow or reuse it. Following delivery, approval, and assurance processes across a piece of work.' },
+          { id: 'ur-c2-g6-c3', name: 'Professional output quality', description: 'Reviewing work before sharing to ensure it is clear, complete, and accurate. Responding to feedback and applying it to improve quality over time. Maintaining consistent standards across outputs, even under delivery pressure.' },
+          { id: 'ur-c2-g6-c4', name: 'Professional judgement & discretion', description: 'Judging when to proceed independently and when to seek support or escalation. Recognising delivery, client, or reputational risks and raising them appropriately. Handling sensitive information or situations with discretion.' },
+          { id: 'ur-c2-g6-c5', name: 'Responsible tool & AI use', description: 'Using AI tools to improve efficiency or quality in line with guidance. Being transparent about tool usage and checking outputs for errors, bias, or risk. Applying judgement when automation is helpful and when it is not appropriate.' },
+        ],
+      },
+      {
+        id: 'ur-c2-g7',
+        name: 'Commercial & Organisational Awareness',
+        summary: 'Operating with a clear understanding of delivery, commercial, and organisational context, and contributing thoughtfully within a consulting environment.',
+        components: [
+          { id: 'ur-c2-g7-c1', name: 'Understanding project context', description: 'Understanding project goals, constraints, and how research supports them. Being aware of key client stakeholders and their interests. Recognising how research outputs may be used by different audiences.' },
+          { id: 'ur-c2-g7-c2', name: 'Scope, time & delivery consideration', description: 'Being mindful of scope, timelines, and budget when proposing or delivering research activity. Identifying when requests or changes may impact delivery expectations. Flagging potential implications to more senior colleagues early.' },
+          { id: 'ur-c2-g7-c3', name: 'Internal & account contributions', description: 'Providing accurate information to support staffing, bids, or planning activities. Supporting internal reporting, assurance, or governance tasks. Contributing to reusable assets or learning that supports wider account or practice goals.' },
+          { id: 'ur-c2-g7-c4', name: 'Noticing & raising issues', description: 'Flagging emerging delivery risks based on research progress or client signals. Identifying opportunities to extend learning, reuse assets, or support follow-on work. Sharing observations with senior colleagues to inform decisions.' },
+          { id: 'ur-c2-g7-c5', name: 'Professional conduct & Capgemini values', description: 'Communicating professionally and confidently with clients and internal stakeholders. Being mindful of how behaviour and outputs reflect on the organisation. Following organisational policies and expectations in client environments.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'ur-c3',
+    title: 'Senior User Researcher',
+    grade: 'C3',
+    discipline: 'User Research',
+    description:
+      "As a C3 Senior User Researcher at Capgemini Invent, you own research delivery across a workstream, shaping the research approach, maintaining quality at scale, and developing others' research capability. You lead analysis and sense-making, influence decisions through credible communication, and take line management responsibility for more junior researchers. You are assessed across seven core competency areas specific to user research.",
+    isUR: true,
+    disciplineCompetencies: [],
+    competencyGroups: [
+      {
+        id: 'ur-c3-g1',
+        name: 'Research Delivery (Methods & Sessions)',
+        summary: "Owning research delivery across a workstream, shaping the research approach, maintaining quality at scale, and developing others' research delivery capability alongside client responsibilities.",
+        components: [
+          { id: 'ur-c3-g1-c1', name: 'Setting the research delivery approach', description: 'Defining the overall method mix and cadence for a phase of work (e.g. when to explore, test, or validate). Making informed decisions about scope, sample, and depth based on delivery risk, timelines, and design maturity. Explaining and defending research trade-offs to stakeholders.' },
+          { id: 'ur-c3-g1-c2', name: 'Designing sessions for clear evidence', description: 'Designing research guides and tasks that directly align with research goals and hypotheses. Ensuring tasks are grounded in real user journeys using prior data, analytics, or operational evidence. Reviewing and refining materials produced by others to reduce bias and ensure sessions produce consistent data.' },
+          { id: 'ur-c3-g1-c3', name: 'Handling challenging research contexts', description: 'Moderating sessions involving vulnerable users, sensitive topics, or high organisational risk. Managing stakeholder observers to protect session quality and participant experience. Adapting effectively when sessions do not go to plan, such as prototype failures or unexpected participant behaviour.' },
+          { id: 'ur-c3-g1-c4', name: 'Accountable research delivery', description: 'Coordinating multi-day or multi-researcher research activity, including recruitment quality, logistics, and materials readiness. Identifying delivery or quality risks early and acting to mitigate them. Setting expectations for session delivery, note quality, and documentation, and intervening when standards risk slipping.' },
+          { id: 'ur-c3-g1-c5', name: 'Building delivery capability', description: 'Coaching C1s and C2s on moderation technique, probing, accessibility, and session control. Creating supported stretch opportunities and providing clear, constructive feedback. Leading or contributing to internal initiatives that improve research delivery, such as standards, templates, and shared learning.' },
+        ],
+      },
+      {
+        id: 'ur-c3-g2',
+        name: 'Analysis & Sense-Making',
+        summary: "Leading analysis and sense-making across a workstream, ensuring analytical rigour, shaping insight direction, and developing others' analytical capability.",
+        components: [
+          { id: 'ur-c3-g2-c1', name: 'Defining the analysis approach', description: 'Designing the overall analysis approach for a phase of work, including how data will be grouped, prioritised, and validated. Clarifying what good evidence and useful insight look like for the context. Making intentional choices about depth, granularity, and confidence thresholds.' },
+          { id: 'ur-c3-g2-c2', name: 'Guiding teams through synthesis', description: 'Facilitating analysis sessions that move teams beyond surface-level themes. Helping teams resolve ambiguity or disagreement using evidence and reasoning. Keeping analysis focused on user needs and service implications, not just observations.' },
+          { id: 'ur-c3-g2-c3', name: 'Owning insight quality', description: 'Framing insights that clearly articulate underlying user needs or behaviours. Prioritising insights based on impact, risk, or relevance to decisions. Challenging weak or unsupported insights and strengthening them with evidence.' },
+          { id: 'ur-c3-g2-c4', name: 'Evidence interpretation & judgement', description: 'Being explicit about confidence levels, assumptions, and limitations in findings. Identifying gaps or weaknesses in the evidence and advising on next steps. Making judgement calls when evidence is partial, contradictory, or time-bound.' },
+          { id: 'ur-c3-g2-c5', name: 'Coaching & improving analysis practice', description: 'Coaching C1s and C2s on moving from themes to insights. Providing structured feedback on analysis outputs and insight statements. Leading or contributing to internal work that improves analysis practice, such as guidance, templates, and exemplars.' },
+        ],
+      },
+      {
+        id: 'ur-c3-g3',
+        name: 'Communication of Research',
+        summary: 'Shaping and delivering research narratives that influence decisions, build trust in evidence, and support others to communicate with confidence.',
+        components: [
+          { id: 'ur-c3-g3-c1', name: 'Framing research narratives', description: 'Crafting clear storylines that link user insight to delivery or strategic implications. Deciding what level of detail different audiences need and why. Framing research outputs around decisions, risks, or trade-offs rather than findings alone.' },
+          { id: 'ur-c3-g3-c2', name: 'High-stakes communication', description: 'Leading research playbacks with senior stakeholders or clients. Handling challenge or scepticism confidently using evidence. Explaining uncertainty or limitations without undermining trust in the work.' },
+          { id: 'ur-c3-g3-c3', name: 'Helping teams act on research', description: 'Helping teams understand what research does and does not suggest. Supporting prioritisation or decision-making discussions using evidence. Making explicit links between insights and recommended actions or options.' },
+          { id: 'ur-c3-g3-c4', name: 'Communication judgement', description: 'Choosing the right moment or forum to share sensitive or unfinished findings. Adapting communication style to political, organisational, or delivery context. Knowing when to simplify, when to go deeper, and when to hold back.' },
+          { id: 'ur-c3-g3-c5', name: 'Building team communication capability', description: 'Coaching others on storytelling, structure, and audience-focused communication. Reviewing and improving research decks, summaries, or written outputs. Leading internal sessions or sharing examples of effective research communication.' },
+        ],
+      },
+      {
+        id: 'ur-c3-g4',
+        name: 'Team Collaboration & Multidisciplinary Working',
+        summary: 'Leading collaboration from a user research perspective, enabling effective multidisciplinary working, and supporting team performance and development.',
+        components: [
+          { id: 'ur-c3-g4-c1', name: 'Research lead in multidisciplinary teams', description: 'Setting clear expectations for how and when research informs design and delivery. Helping teams plan work that appropriately sequences research and delivery activity. Acting as the main research point of contact within the team.' },
+          { id: 'ur-c3-g4-c2', name: 'Enabling effective team working', description: 'Facilitating alignment or prioritisation discussions where user needs, delivery constraints, and trade-offs need to be balanced. Recognising when misalignment or tension is affecting progress and addressing it constructively. Supporting teams through ambiguity or uncertainty using evidence and judgement.' },
+          { id: 'ur-c3-g4-c3', name: 'Managing disagreement & differing views', description: 'Using research evidence to reframe debate or resolve disagreement. Managing differing stakeholder expectations within team settings. Knowing when to escalate issues or seek support to unblock progress.' },
+          { id: 'ur-c3-g4-c4', name: 'Supporting others in team environments', description: 'Supporting line reports or junior researchers to operate confidently in multidisciplinary teams. Giving feedback on collaboration, communication style, or influence. Helping others reflect on and learn from challenging team dynamics.' },
+          { id: 'ur-c3-g4-c5', name: 'Strengthening collaboration beyond delivery', description: 'Highlighting patterns that span multiple teams or services and working with senior stakeholders to align priorities or drive coordinated action. Sharing learning about effective collaboration across the practice. Supporting recruitment, onboarding, or capability-building activities that strengthen team working.' },
+        ],
+      },
+      {
+        id: 'ur-c3-g5',
+        name: 'Ethical & Inclusive Research Practice',
+        summary: 'Owning ethical and inclusive research standards across a workstream, exercising strong judgement, and supporting others to develop ethical confidence.',
+        components: [
+          { id: 'ur-c3-g5-c1', name: 'Setting ethical standards', description: 'Anticipating ethical, safeguarding, or inclusion risks early in planning. Setting clear expectations about consent, participant wellbeing, and data use. Advising teams on ethical considerations and trade-offs.' },
+          { id: 'ur-c3-g5-c2', name: 'Ethical judgement under pressure', description: 'Making decisions to adapt, pause, or reshape research activity in response to ethical concerns. Balancing delivery constraints with participant wellbeing and inclusion. Confidently explaining ethical decisions to stakeholders.' },
+          { id: 'ur-c3-g5-c3', name: 'Ensuring inclusion across the lifecycle', description: 'Considering whose voices may be missing and adjusting approaches accordingly. Supporting inclusive recruitment and accessible session design as standard practice. Encouraging teams to consider accessibility and inclusion when interpreting findings.' },
+          { id: 'ur-c3-g5-c4', name: 'Building ethical awareness in others', description: 'Coaching others on recognising and responding to ethical concerns. Supporting junior researchers after challenging or sensitive sessions. Using line management conversations to reinforce ethical responsibility and reflection.' },
+          { id: 'ur-c3-g5-c5', name: 'Strengthening ethical practice organisation-wide', description: 'Leading or contributing to internal guidance on ethics, safeguarding, or inclusion. Sharing learnings or case studies to build collective ethical maturity. Supporting practice-level assurance or governance activities.' },
+        ],
+      },
+      {
+        id: 'ur-c3-g6',
+        name: 'Professionalism & Ways of Working',
+        summary: 'Being accountable for delivery quality, people management, and internal responsibilities, while modelling strong professional judgement and sustainable ways of working.',
+        components: [
+          { id: 'ur-c3-g6-c1', name: 'Accountability for delivery quality', description: 'Setting expectations for output quality, documentation, and ways of working across a workstream. Ensuring work meets both client and Capgemini standards under delivery pressure. Intervening when quality risks undermining outcomes or credibility.' },
+          { id: 'ur-c3-g6-c2', name: 'Confident professional decision-making', description: 'Making judgement calls when trade-offs are required in scope, timing, or confidence. Knowing when to escalate issues and when to resolve them independently. Handling sensitive delivery, client, or people situations with discretion.' },
+          { id: 'ur-c3-g6-c3', name: 'Supporting people performance & wellbeing', description: 'Running effective 1:1s focused on development, feedback, and support. Helping individuals set goals, build evidence, and progress professionally. Managing workload and wellbeing responsibly, escalating concerns where needed.' },
+          { id: 'ur-c3-g6-c4', name: 'Balancing competing priorities', description: 'Managing competing priorities across client work and internal commitments. Being transparent about capacity and trade-offs. Supporting others to balance responsibilities realistically and sustainably.' },
+          { id: 'ur-c3-g6-c5', name: 'Internal contribution & improvement', description: 'Leading or contributing to internal initiatives such as recruitment, onboarding, and capability building. Improving practice-level processes, templates, or quality assurance approaches. Sharing learning that improves consistency and efficiency across teams.' },
+        ],
+      },
+      {
+        id: 'ur-c3-g7',
+        name: 'Commercial & Organisational Awareness',
+        summary: 'Operating with a clear understanding of delivery, commercial, and organisational context, and actively contributing within a consulting environment.',
+        components: [
+          { id: 'ur-c3-g7-c1', name: 'Positioning research value', description: 'Framing research in terms of client risk, outcomes, and decision-making. Helping teams understand how insights will be used by different stakeholders. Advising on where research effort will have the greatest impact.' },
+          { id: 'ur-c3-g7-c2', name: 'Commercial judgement in delivery', description: 'Recognising scope, timeline, or budget implications of research decisions. Advising on trade-offs when delivery constraints shift. Flagging commercial or delivery risks early to account leadership.' },
+          { id: 'ur-c3-g7-c3', name: 'Supporting business & account needs', description: 'Contributing to bids, proposals, or shaping work through method inputs, estimates, and case studies. Supporting account planning or assurance activities. Helping coordinate research input across multiple pieces of work.' },
+          { id: 'ur-c3-g7-c4', name: 'Spotting issues affecting value & growth', description: 'Identifying follow-on work or unmet client needs based on research activity. Recommending reuse of assets or learning across accounts. Flagging organisational or capability risks that may affect delivery.' },
+          { id: 'ur-c3-g7-c5', name: 'Building consulting confidence in others', description: 'Coaching juniors on consulting behaviours and expectations. Helping others understand how to operate professionally with clients. Sharing insight into how Capgemini works across governance, accounts, and opportunities.' },
+        ],
+      },
+    ],
+  },
 ];
 
 export const GRADE_LABELS: Record<Grade, string> = {
+  C1: 'C1 · Associate Consultant',
   C2: 'C2 · Consultant',
   C3: 'C3 · Senior Consultant',
   C4: 'C4 · Managing Consultant',

@@ -1,13 +1,18 @@
 import { useState } from 'react';
-import { ChevronRight, User } from 'lucide-react';
+import { ChevronRight, User, TrendingUp, BadgeCheck } from 'lucide-react';
 import { ROLES, GRADE_LABELS, type Role, type Grade } from '../data/competencies';
-import logo from "./figma/assets/UCD-DE-Logo-Dark-Mode.png";
+import logo from 'figma:asset/9606a0e21a211ee2a0fb83b6ddc5e74e18e893c0.png';
 
 interface SetupScreenProps {
-  onStart: (userName: string, role: Role) => void;
+  onStart: (userName: string, role: Role, actualGrade: Grade) => void;
 }
 
 const GRADE_COLORS: Record<Grade, { bg: string; badge: string; border: string }> = {
+  C1: {
+    bg: 'bg-emerald-50',
+    badge: 'bg-emerald-100 text-emerald-800',
+    border: 'border-emerald-200 hover:border-emerald-400',
+  },
   C2: {
     bg: 'bg-blue-50',
     badge: 'bg-blue-100 text-blue-800',
@@ -25,17 +30,47 @@ const GRADE_COLORS: Record<Grade, { bg: string; badge: string; border: string }>
   },
 };
 
+const NEXT_GRADE: Partial<Record<Grade, Grade>> = {
+  C1: 'C2',
+  C2: 'C3',
+  C3: 'C4',
+};
+
+const GRADE_SUBTITLE: Record<Grade, string> = {
+  C1: 'Associate Consultant',
+  C2: 'Consultant',
+  C3: 'Senior Consultant',
+  C4: 'Managing Consultant',
+};
+
+type AssessmentMode = 'current' | 'aspiring';
+
 export function SetupScreen({ onStart }: SetupScreenProps) {
   const [userName, setUserName] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<Grade | null>(null);
+  const [assessmentMode, setAssessmentMode] = useState<AssessmentMode>('current');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-  const grades: Grade[] = ['C2', 'C3', 'C4'];
-  const filteredRoles = selectedGrade ? ROLES.filter((r) => r.grade === selectedGrade) : [];
+  const grades: Grade[] = ['C1', 'C2', 'C3', 'C4'];
+
+  // The grade whose roles/competencies are shown
+  const effectiveGrade: Grade | null =
+    selectedGrade && assessmentMode === 'aspiring' && NEXT_GRADE[selectedGrade]
+      ? NEXT_GRADE[selectedGrade]!
+      : selectedGrade;
+
+  const canAspire = selectedGrade !== null && selectedGrade in NEXT_GRADE;
+  const filteredRoles = effectiveGrade ? ROLES.filter((r) => r.grade === effectiveGrade) : [];
   const canStart = userName.trim().length > 0 && selectedRole !== null;
 
   function handleGradeSelect(grade: Grade) {
     setSelectedGrade(grade);
+    setAssessmentMode('current');
+    setSelectedRole(null);
+  }
+
+  function handleModeSelect(mode: AssessmentMode) {
+    setAssessmentMode(mode);
     setSelectedRole(null);
   }
 
@@ -107,10 +142,10 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                   2
                 </div>
                 <span className="text-gray-500 uppercase tracking-wider" style={{ fontSize: '11px' }}>
-                  Select your grade
+                  Your current grade
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {grades.map((grade) => {
                   const colors = GRADE_COLORS[grade];
                   const isSelected = selectedGrade === grade;
@@ -131,7 +166,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                         {grade}
                       </div>
                       <div className="text-gray-800" style={{ fontSize: '13px' }}>
-                        {GRADE_LABELS[grade].split('·')[1].trim()}
+                        {GRADE_SUBTITLE[grade]}
                       </div>
                       {isSelected && (
                         <div
@@ -147,6 +182,96 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                   );
                 })}
               </div>
+
+              {/* Assessment mode toggle — only shown once a grade is selected */}
+              {selectedGrade && (
+                <div className="mt-4">
+                  <p className="text-gray-500 mb-2.5" style={{ fontSize: '12px' }}>
+                    Which skills would you like to assess yourself against?
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Current grade option */}
+                    <button
+                      onClick={() => handleModeSelect('current')}
+                      className={`flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${
+                        assessmentMode === 'current'
+                          ? 'bg-[#0058AB]/5 border-[#0058AB]/40 shadow-sm'
+                          : 'bg-white border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div
+                        className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                          assessmentMode === 'current' ? 'bg-[#0058AB]' : 'bg-gray-100'
+                        }`}
+                      >
+                        <BadgeCheck className={`w-4 h-4 ${assessmentMode === 'current' ? 'text-white' : 'text-gray-400'}`} />
+                      </div>
+                      <div>
+                        <div
+                          className={assessmentMode === 'current' ? 'text-[#0058AB]' : 'text-gray-800'}
+                          style={{ fontSize: '13px', fontWeight: 500 }}
+                        >
+                          My current grade
+                        </div>
+                        <div className="text-gray-400 mt-0.5" style={{ fontSize: '11px' }}>
+                          Assess against {GRADE_LABELS[selectedGrade]} skills
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Aspiring option — greyed out if no next grade */}
+                    <button
+                      onClick={() => canAspire && handleModeSelect('aspiring')}
+                      disabled={!canAspire}
+                      className={`flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${
+                        !canAspire
+                          ? 'bg-gray-50 border-gray-100 opacity-50 cursor-not-allowed'
+                          : assessmentMode === 'aspiring'
+                          ? 'bg-amber-50 border-amber-300 shadow-sm'
+                          : 'bg-white border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div
+                        className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                          assessmentMode === 'aspiring' ? 'bg-amber-400' : 'bg-gray-100'
+                        }`}
+                      >
+                        <TrendingUp className={`w-4 h-4 ${assessmentMode === 'aspiring' ? 'text-white' : 'text-gray-400'}`} />
+                      </div>
+                      <div>
+                        <div
+                          className={
+                            assessmentMode === 'aspiring'
+                              ? 'text-amber-700'
+                              : 'text-gray-800'
+                          }
+                          style={{ fontSize: '13px', fontWeight: 500 }}
+                        >
+                          Aspiring to next grade
+                        </div>
+                        <div className="text-gray-400 mt-0.5" style={{ fontSize: '11px' }}>
+                          {canAspire
+                            ? `Assess against ${GRADE_LABELS[NEXT_GRADE[selectedGrade]!]} skills`
+                            : 'No higher grade available'}
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Aspiring context note */}
+                  {assessmentMode === 'aspiring' && effectiveGrade && (
+                    <div
+                      className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg"
+                      style={{ backgroundColor: '#FFF8E7', border: '1px solid #FDE68A' }}
+                    >
+                      <TrendingUp className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-amber-700" style={{ fontSize: '11px' }}>
+                        You'll be assessed against <strong>{GRADE_LABELS[effectiveGrade]}</strong> competencies — useful if you're working towards promotion in the near future.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Step 3 – Role */}
@@ -187,7 +312,9 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                               {role.title}
                             </div>
                             <div className="text-gray-500 mt-0.5" style={{ fontSize: '12px' }}>
-                              {role.discipline} · {role.disciplineCompetencies.length} discipline skills
+                              {role.discipline} · {role.isUR
+                                ? `${role.competencyGroups?.length ?? 0} competency groups`
+                                : `${role.disciplineCompetencies.length} discipline skills`}
                             </div>
                           </div>
                           {isSelected && (
@@ -218,19 +345,39 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                   >
                     {userName.trim()[0].toUpperCase()}
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <div className="text-gray-900" style={{ fontSize: '14px' }}>
                       {userName.trim()}
                     </div>
                     <div className="text-gray-500" style={{ fontSize: '13px' }}>
-                      {selectedRole.title} · {selectedRole.grade}
+                      {selectedRole.title}
                     </div>
+                    {assessmentMode === 'aspiring' && selectedGrade && effectiveGrade ? (
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <span
+                          className={`px-1.5 py-0.5 rounded-full text-[10px] ${GRADE_COLORS[selectedGrade].badge}`}
+                        >
+                          {selectedGrade}
+                        </span>
+                        <TrendingUp className="w-3 h-3 text-amber-400" />
+                        <span
+                          className={`px-1.5 py-0.5 rounded-full text-[10px] ${GRADE_COLORS[effectiveGrade].badge}`}
+                        >
+                          {effectiveGrade}
+                        </span>
+                        <span className="text-amber-600" style={{ fontSize: '11px' }}>aspiring</span>
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 mt-0.5" style={{ fontSize: '12px' }}>
+                        {selectedRole.grade} · Current grade
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
               <button
                 disabled={!canStart}
-                onClick={() => selectedRole && onStart(userName.trim(), selectedRole)}
+                onClick={() => selectedRole && selectedGrade && onStart(userName.trim(), selectedRole, selectedGrade)}
                 className="w-full py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all text-white shadow-md"
                 style={
                   canStart

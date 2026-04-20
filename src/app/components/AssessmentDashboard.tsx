@@ -13,17 +13,21 @@ import {
   ChevronUp,
   Menu,
   X,
+  TrendingUp,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import logo from "./figma/assets/UCD-DE-Logo-Dark-Mode.png";
-import gradientBar from "./figma/assets/Capgemini_Progress_Bar_RGB 1.png";
+import logo from 'src/assets/9606a0e21a211ee2a0fb83b6ddc5e74e18e893c0.png';
+import gradientBar from 'src/assets/8ea69a91d33ff336ca85ce7c076d9bd46d3972d3.png';
 import {
   CORE_COMPETENCIES,
   PROFICIENCY_OPTIONS,
+  GRADE_LABELS,
   type Role,
+  type Grade,
   type Competency,
+  type CompetencyGroup,
   type ProficiencyLevel,
 } from '../data/competencies';
 
@@ -35,6 +39,7 @@ interface AssessmentEntry {
 interface AssessmentDashboardProps {
   userName: string;
   role: Role;
+  actualGrade: Grade;
   onBack: () => void;
 }
 
@@ -43,6 +48,7 @@ function getProficiencyOption(value: ProficiencyLevel) {
 }
 
 const GRADE_BADGE: Record<string, { bg: string; text: string }> = {
+  C1: { bg: 'bg-emerald-100', text: 'text-emerald-800' },
   C2: { bg: 'bg-blue-100', text: 'text-blue-800' },
   C3: { bg: 'bg-violet-100', text: 'text-violet-800' },
   C4: { bg: 'bg-amber-100', text: 'text-amber-800' },
@@ -51,12 +57,16 @@ const GRADE_BADGE: Record<string, { bg: string; text: string }> = {
 export function AssessmentDashboard({
   userName,
   role,
+  actualGrade,
   onBack,
 }: AssessmentDashboardProps) {
-  const coreCompetencies = CORE_COMPETENCIES[role.grade];
+  const coreCompetencies = role.isUR ? [] : CORE_COMPETENCIES[role.grade];
+  const urGroups = role.isUR ? (role.competencyGroups ?? []) : [];
+  const isAspiring = actualGrade !== role.grade;
 
   const [assessments, setAssessments] = useState<Record<string, AssessmentEntry>>({});
   const [activeSection, setActiveSection] = useState<'core' | 'discipline'>('core');
+  const [activeURGroup, setActiveURGroup] = useState(0);
   const [editingName, setEditingName] = useState(false);
   const [displayName, setDisplayName] = useState(userName);
   const [nameInput, setNameInput] = useState(userName);
@@ -64,6 +74,7 @@ export function AssessmentDashboard({
 
   const coreSectionRef = useRef<HTMLDivElement>(null);
   const disciplineSectionRef = useRef<HTMLDivElement>(null);
+  const urGroupRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const getAssessment = useCallback(
     (id: string): AssessmentEntry => assessments[id] ?? { rating: 0 as ProficiencyLevel, notes: '' },
@@ -84,18 +95,26 @@ export function AssessmentDashboard({
     }));
   };
 
-  const allCompetencies = [...coreCompetencies, ...role.disciplineCompetencies];
+  const allCompetencies = role.isUR
+    ? urGroups.flatMap((g) => g.components)
+    : [...coreCompetencies, ...role.disciplineCompetencies];
   const assessedCount = allCompetencies.filter(
     (c) => (assessments[c.id]?.rating ?? 0) > 0
   ).length;
   const totalCount = allCompetencies.length;
-  const progress = Math.round((assessedCount / totalCount) * 100);
+  const progress = totalCount > 0 ? Math.round((assessedCount / totalCount) * 100) : 0;
 
   const scrollTo = (section: 'core' | 'discipline') => {
     setActiveSection(section);
     setSidebarOpen(false);
     const ref = section === 'core' ? coreSectionRef : disciplineSectionRef;
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const scrollToGroup = (idx: number) => {
+    setActiveURGroup(idx);
+    setSidebarOpen(false);
+    urGroupRefs.current[idx]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   // ── Export PDF ────────────────────────────────────────────────────────────
@@ -147,34 +166,66 @@ export function AssessmentDashboard({
         return [sanitizeForPDF(c.name), profLabel, sanitizeForPDF(entry.notes || '-')];
       });
 
-    autoTable(doc, {
-      startY: 38,
-      head: [['Core UCD Competency', 'Proficiency Level', 'Notes']],
-      body: buildRows(coreCompetencies),
-      headStyles: { fillColor: [18, 26, 56], textColor: 255, fontSize: 9 },
-      bodyStyles: { fontSize: 8, cellPadding: 3 },
-      columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 45 }, 2: { cellWidth: 155 } },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
-      margin: { left: 14, right: 14 },
-    });
+    if (role.isUR && urGroups.length > 0) {
+      // UR: one table per competency group
+      let startY = 38;
+      for (let i = 0; i < urGroups.length; i++) {
+        const group = urGroups[i];
+        if (i > 0) {
+          const lastY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? startY;
+          startY = lastY + 8;
+          // Add new page if close to bottom
+          if (startY > 185) {
+            doc.addPage();
+            startY = 15;
+          }
+        }
+        doc.setFontSize(10);
+        doc.setTextColor(18, 26, 56);
+        doc.text(sanitizeForPDF(`${i + 1}. ${group.name}`), 14, startY - (i === 0 ? 3 : 0));
+        doc.setTextColor(0, 0, 0);
+        autoTable(doc, {
+          startY: i === 0 ? 38 : startY + 4,
+          head: [['Component', 'Proficiency Level', 'Notes']],
+          body: buildRows(group.components),
+          headStyles: { fillColor: [18, 26, 56], textColor: 255, fontSize: 9 },
+          bodyStyles: { fontSize: 8, cellPadding: 3 },
+          columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 45 }, 2: { cellWidth: 155 } },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { left: 14, right: 14 },
+        });
+      }
+    } else {
+      // Design: Core UCD + Discipline tables
+      autoTable(doc, {
+        startY: 38,
+        head: [['Core UCD Competency', 'Proficiency Level', 'Notes']],
+        body: buildRows(coreCompetencies),
+        headStyles: { fillColor: [18, 26, 56], textColor: 255, fontSize: 9 },
+        bodyStyles: { fontSize: 8, cellPadding: 3 },
+        columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 45 }, 2: { cellWidth: 155 } },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        margin: { left: 14, right: 14 },
+      });
 
-    const afterCore = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? 100;
+      const afterCore = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? 100;
 
-    doc.setFontSize(11);
-    doc.setTextColor(18, 26, 56);
-    doc.text('Discipline-Specific Competencies', 14, afterCore + 10);
-    doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.setTextColor(18, 26, 56);
+      doc.text('Discipline-Specific Competencies', 14, afterCore + 10);
+      doc.setTextColor(0, 0, 0);
 
-    autoTable(doc, {
-      startY: afterCore + 15,
-      head: [['Discipline Competency', 'Proficiency Level', 'Notes']],
-      body: buildRows(role.disciplineCompetencies),
-      headStyles: { fillColor: [0, 88, 171], textColor: 255, fontSize: 9 },
-      bodyStyles: { fontSize: 8, cellPadding: 3 },
-      columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 45 }, 2: { cellWidth: 155 } },
-      alternateRowStyles: { fillColor: [245, 248, 255] },
-      margin: { left: 14, right: 14 },
-    });
+      autoTable(doc, {
+        startY: afterCore + 15,
+        head: [['Discipline Competency', 'Proficiency Level', 'Notes']],
+        body: buildRows(role.disciplineCompetencies),
+        headStyles: { fillColor: [0, 88, 171], textColor: 255, fontSize: 9 },
+        bodyStyles: { fontSize: 8, cellPadding: 3 },
+        columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 45 }, 2: { cellWidth: 155 } },
+        alternateRowStyles: { fillColor: [245, 248, 255] },
+        margin: { left: 14, right: 14 },
+      });
+    }
 
     const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? 200;
     doc.setFontSize(8);
@@ -192,39 +243,56 @@ export function AssessmentDashboard({
       ['Name', displayName],
       ['Role', role.title],
       ['Grade', role.grade],
+      ['Discipline', role.discipline],
       ['Date', new Date().toLocaleDateString('en-GB')],
       ['Progress', `${assessedCount}/${totalCount} (${progress}%)`],
       [],
-      ['CORE UCD COMPETENCIES'],
-      ['Competency', 'Description', 'Proficiency Level', 'Notes'],
     ];
 
-    coreCompetencies.forEach((c) => {
-      const entry = getAssessment(c.id);
-      const profLabel = entry.rating > 0 ? (getProficiencyOption(entry.rating)?.label ?? '') : 'Not assessed';
-      rows.push([c.name, c.description, profLabel, entry.notes || '']);
-    });
-
-    rows.push([]);
-    rows.push(['DISCIPLINE-SPECIFIC COMPETENCIES']);
-    rows.push(['Competency', 'Description', 'Proficiency Level', 'Notes']);
-
-    role.disciplineCompetencies.forEach((c) => {
-      const entry = getAssessment(c.id);
-      const profLabel = entry.rating > 0 ? (getProficiencyOption(entry.rating)?.label ?? '') : 'Not assessed';
-      rows.push([c.name, c.description, profLabel, entry.notes || '']);
-    });
+    if (role.isUR && urGroups.length > 0) {
+      urGroups.forEach((group, idx) => {
+        rows.push([`${idx + 1}. ${group.name}`.toUpperCase()]);
+        rows.push([group.summary]);
+        rows.push(['Component', 'Description', 'Proficiency Level', 'Notes']);
+        group.components.forEach((c) => {
+          const entry = getAssessment(c.id);
+          const profLabel = entry.rating > 0 ? (getProficiencyOption(entry.rating)?.label ?? '') : 'Not assessed';
+          rows.push([c.name, c.description, profLabel, entry.notes || '']);
+        });
+        rows.push([]);
+      });
+    } else {
+      rows.push(['CORE UCD COMPETENCIES']);
+      rows.push(['Competency', 'Description', 'Proficiency Level', 'Notes']);
+      coreCompetencies.forEach((c) => {
+        const entry = getAssessment(c.id);
+        const profLabel = entry.rating > 0 ? (getProficiencyOption(entry.rating)?.label ?? '') : 'Not assessed';
+        rows.push([c.name, c.description, profLabel, entry.notes || '']);
+      });
+      rows.push([]);
+      rows.push(['DISCIPLINE-SPECIFIC COMPETENCIES']);
+      rows.push(['Competency', 'Description', 'Proficiency Level', 'Notes']);
+      role.disciplineCompetencies.forEach((c) => {
+        const entry = getAssessment(c.id);
+        const profLabel = entry.rating > 0 ? (getProficiencyOption(entry.rating)?.label ?? '') : 'Not assessed';
+        rows.push([c.name, c.description, profLabel, entry.notes || '']);
+      });
+    }
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{ wch: 35 }, { wch: 65 }, { wch: 20 }, { wch: 50 }];
+    ws['!cols'] = [{ wch: 40 }, { wch: 65 }, { wch: 20 }, { wch: 50 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Assessment');
     XLSX.writeFile(wb, `UCD_Assessment_${displayName.replace(/\s+/g, '_')}_${role.grade}.xlsx`);
   };
 
   const gradeBadge = GRADE_BADGE[role.grade] ?? { bg: 'bg-gray-100', text: 'text-gray-700' };
-  const coreAssessed = coreCompetencies.filter((c) => (assessments[c.id]?.rating ?? 0) > 0).length;
-  const discAssessed = role.disciplineCompetencies.filter((c) => (assessments[c.id]?.rating ?? 0) > 0).length;
+  const coreAssessed = role.isUR ? 0 : coreCompetencies.filter((c) => (assessments[c.id]?.rating ?? 0) > 0).length;
+  const discAssessed = role.isUR ? 0 : role.disciplineCompetencies.filter((c) => (assessments[c.id]?.rating ?? 0) > 0).length;
+
+  // Accent colours for UR competency groups
+  const UR_GROUP_COLORS = ['#0058AB', '#0891b2', '#6d28d9', '#059669', '#d97706', '#9333ea', '#dc2626'];
+  const UR_GROUP_LIGHTS = ['bg-blue-50', 'bg-cyan-50', 'bg-violet-50', 'bg-emerald-50', 'bg-amber-50', 'bg-purple-50', 'bg-red-50'];
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
@@ -323,16 +391,28 @@ export function AssessmentDashboard({
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={exportPDF}
-            className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition text-white hover:opacity-80"
-            style={{ backgroundColor: 'rgba(29,184,242,0.15)', border: '1px solid rgba(29,184,242,0.4)', fontSize: '13px' }}
+            disabled={assessedCount < totalCount}
+            title={assessedCount < totalCount ? `Complete all ${totalCount} competencies to export` : 'Export PDF'}
+            className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition text-white"
+            style={
+              assessedCount < totalCount
+                ? { backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', fontSize: '13px', opacity: 0.45, cursor: 'not-allowed' }
+                : { backgroundColor: 'rgba(29,184,242,0.15)', border: '1px solid rgba(29,184,242,0.4)', fontSize: '13px' }
+            }
           >
-            <FileText className="w-3.5 h-3.5" style={{ color: '#1DB8F2' }} />
-            <span style={{ color: '#1DB8F2' }} className="hidden sm:inline">PDF</span>
+            <FileText className="w-3.5 h-3.5" style={{ color: assessedCount < totalCount ? 'rgba(255,255,255,0.4)' : '#1DB8F2' }} />
+            <span style={{ color: assessedCount < totalCount ? 'rgba(255,255,255,0.4)' : '#1DB8F2' }} className="hidden sm:inline">PDF</span>
           </button>
           <button
             onClick={exportExcel}
-            className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition hover:opacity-90 text-white"
-            style={{ backgroundColor: '#1DB8F2', fontSize: '13px' }}
+            disabled={assessedCount < totalCount}
+            title={assessedCount < totalCount ? `Complete all ${totalCount} competencies to export` : 'Export Excel'}
+            className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition text-white"
+            style={
+              assessedCount < totalCount
+                ? { backgroundColor: 'rgba(255,255,255,0.1)', fontSize: '13px', opacity: 0.45, cursor: 'not-allowed' }
+                : { backgroundColor: '#1DB8F2', fontSize: '13px' }
+            }
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Excel</span>
@@ -373,85 +453,146 @@ export function AssessmentDashboard({
           </div>
 
           <nav className="flex-1 overflow-y-auto py-3">
-            {/* Core UCD nav */}
-            <button
-              onClick={() => scrollTo('core')}
-              className={`w-full text-left px-5 py-3 border-l-2 transition-all ${activeSection === 'core' ? 'bg-blue-50' : 'border-transparent hover:bg-gray-50'}`}
-              style={activeSection === 'core' ? { borderLeftColor: '#0058AB' } : {}}
-            >
-              <div className="flex items-center justify-between">
-                <span className={activeSection === 'core' ? 'text-[#0058AB]' : 'text-gray-700'} style={{ fontSize: '13px' }}>
-                  Core UCD · {role.grade}
-                </span>
-                <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500" style={{ fontSize: '10px' }}>
-                  {coreAssessed}/{coreCompetencies.length}
-                </span>
-              </div>
-              <div className="relative mt-1.5 h-1 w-full rounded-full overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
-                <div
-                  className="absolute inset-y-0 left-0 h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.round((coreAssessed / coreCompetencies.length) * 100)}%`,
-                    backgroundImage: `url(${gradientBar})`,
-                    backgroundSize: `${coreAssessed > 0 ? Math.ceil(coreCompetencies.length / coreAssessed * 100) : 100}% 100%`,
-                    backgroundPosition: 'left center',
-                  }}
-                />
-              </div>
-            </button>
-
-            {/* Core skills list */}
-            <div className="pl-7 pr-4 pb-2">
-              {coreCompetencies.map((c) => {
-                const entry = getAssessment(c.id);
-                const prof = entry.rating > 0 ? getProficiencyOption(entry.rating) : null;
+            {role.isUR ? (
+              /* ── UR: 7 Competency Group navigation ── */
+              urGroups.map((group, idx) => {
+                const groupComponents = group.components;
+                const groupAssessed = groupComponents.filter((c) => (assessments[c.id]?.rating ?? 0) > 0).length;
+                const groupTotal = groupComponents.length;
+                const isActive = activeURGroup === idx;
+                const accentColor = UR_GROUP_COLORS[idx % UR_GROUP_COLORS.length];
                 return (
-                  <div key={c.id} className="flex items-center gap-2 py-1.5">
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${prof ? prof.dotClass : 'bg-gray-200'}`} />
-                    <span className="text-gray-500 truncate" style={{ fontSize: '12px' }}>{c.name}</span>
+                  <div key={group.id}>
+                    <button
+                      onClick={() => scrollToGroup(idx)}
+                      className={`w-full text-left px-5 py-3 border-l-2 transition-all ${isActive ? '' : 'border-transparent hover:bg-gray-50'}`}
+                      style={isActive ? { borderLeftColor: accentColor, backgroundColor: `${accentColor}10` } : {}}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="leading-snug"
+                          style={{ fontSize: '12px', color: isActive ? accentColor : '#374151' }}
+                        >
+                          {idx + 1}. {group.name}
+                        </span>
+                        <span className="ml-2 px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 shrink-0" style={{ fontSize: '10px' }}>
+                          {groupAssessed}/{groupTotal}
+                        </span>
+                      </div>
+                      <div className="relative mt-1.5 h-1 w-full rounded-full overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
+                        <div
+                          className="absolute inset-y-0 left-0 h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.round((groupAssessed / groupTotal) * 100)}%`,
+                            backgroundImage: `url(${gradientBar})`,
+                            backgroundSize: `${groupAssessed > 0 ? Math.ceil(groupTotal / groupAssessed * 100) : 100}% 100%`,
+                            backgroundPosition: 'left center',
+                          }}
+                        />
+                      </div>
+                    </button>
+                    {/* Show component dots when this group is active */}
+                    {isActive && (
+                      <div className="pl-7 pr-4 pb-1">
+                        {groupComponents.map((c) => {
+                          const entry = getAssessment(c.id);
+                          const prof = entry.rating > 0 ? getProficiencyOption(entry.rating) : null;
+                          return (
+                            <div key={c.id} className="flex items-center gap-2 py-1">
+                              <div className={`w-2 h-2 rounded-full shrink-0 ${prof ? prof.dotClass : 'bg-gray-200'}`} />
+                              <span className="text-gray-500 truncate" style={{ fontSize: '11px' }}>{c.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
-              })}
-            </div>
-
-            {/* Discipline nav */}
-            <button
-              onClick={() => scrollTo('discipline')}
-              className={`w-full text-left px-5 py-3 border-l-2 transition-all mt-1 ${activeSection === 'discipline' ? 'bg-violet-50 border-violet-500' : 'border-transparent hover:bg-gray-50'}`}
-            >
-              <div className="flex items-center justify-between">
-                <span className={`${activeSection === 'discipline' ? 'text-violet-700' : 'text-gray-700'}`} style={{ fontSize: '13px' }}>
-                  Discipline Specific
-                </span>
-                <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500" style={{ fontSize: '10px' }}>
-                  {discAssessed}/{role.disciplineCompetencies.length}
-                </span>
-              </div>
-              <div className="relative mt-1.5 h-1 w-full rounded-full overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
-                <div
-                  className="absolute inset-y-0 left-0 h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.round((discAssessed / role.disciplineCompetencies.length) * 100)}%`,
-                    backgroundImage: `url(${gradientBar})`,
-                    backgroundSize: `${discAssessed > 0 ? Math.ceil(role.disciplineCompetencies.length / discAssessed * 100) : 100}% 100%`,
-                    backgroundPosition: 'left center',
-                  }}
-                />
-              </div>
-            </button>
-
-            <div className="pl-7 pr-4 pb-2">
-              {role.disciplineCompetencies.map((c) => {
-                const entry = getAssessment(c.id);
-                const prof = entry.rating > 0 ? getProficiencyOption(entry.rating) : null;
-                return (
-                  <div key={c.id} className="flex items-center gap-2 py-1.5">
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${prof ? prof.dotClass : 'bg-gray-200'}`} />
-                    <span className="text-gray-500 truncate" style={{ fontSize: '12px' }}>{c.name}</span>
+              })
+            ) : (
+              /* ── Design: Core UCD + Discipline navigation ── */
+              <>
+                {/* Core UCD nav */}
+                <button
+                  onClick={() => scrollTo('core')}
+                  className={`w-full text-left px-5 py-3 border-l-2 transition-all ${activeSection === 'core' ? 'bg-blue-50' : 'border-transparent hover:bg-gray-50'}`}
+                  style={activeSection === 'core' ? { borderLeftColor: '#0058AB' } : {}}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={activeSection === 'core' ? 'text-[#0058AB]' : 'text-gray-700'} style={{ fontSize: '13px' }}>
+                      Core UCD · {role.grade}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500" style={{ fontSize: '10px' }}>
+                      {coreAssessed}/{coreCompetencies.length}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="relative mt-1.5 h-1 w-full rounded-full overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
+                    <div
+                      className="absolute inset-y-0 left-0 h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.round((coreAssessed / coreCompetencies.length) * 100)}%`,
+                        backgroundImage: `url(${gradientBar})`,
+                        backgroundSize: `${coreAssessed > 0 ? Math.ceil(coreCompetencies.length / coreAssessed * 100) : 100}% 100%`,
+                        backgroundPosition: 'left center',
+                      }}
+                    />
+                  </div>
+                </button>
+
+                {/* Core skills list */}
+                <div className="pl-7 pr-4 pb-2">
+                  {coreCompetencies.map((c) => {
+                    const entry = getAssessment(c.id);
+                    const prof = entry.rating > 0 ? getProficiencyOption(entry.rating) : null;
+                    return (
+                      <div key={c.id} className="flex items-center gap-2 py-1.5">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${prof ? prof.dotClass : 'bg-gray-200'}`} />
+                        <span className="text-gray-500 truncate" style={{ fontSize: '12px' }}>{c.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Discipline nav */}
+                <button
+                  onClick={() => scrollTo('discipline')}
+                  className={`w-full text-left px-5 py-3 border-l-2 transition-all mt-1 ${activeSection === 'discipline' ? 'bg-violet-50 border-violet-500' : 'border-transparent hover:bg-gray-50'}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`${activeSection === 'discipline' ? 'text-violet-700' : 'text-gray-700'}`} style={{ fontSize: '13px' }}>
+                      Discipline Specific
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500" style={{ fontSize: '10px' }}>
+                      {discAssessed}/{role.disciplineCompetencies.length}
+                    </span>
+                  </div>
+                  <div className="relative mt-1.5 h-1 w-full rounded-full overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
+                    <div
+                      className="absolute inset-y-0 left-0 h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.round((discAssessed / role.disciplineCompetencies.length) * 100)}%`,
+                        backgroundImage: `url(${gradientBar})`,
+                        backgroundSize: `${discAssessed > 0 ? Math.ceil(role.disciplineCompetencies.length / discAssessed * 100) : 100}% 100%`,
+                        backgroundPosition: 'left center',
+                      }}
+                    />
+                  </div>
+                </button>
+
+                <div className="pl-7 pr-4 pb-2">
+                  {role.disciplineCompetencies.map((c) => {
+                    const entry = getAssessment(c.id);
+                    const prof = entry.rating > 0 ? getProficiencyOption(entry.rating) : null;
+                    return (
+                      <div key={c.id} className="flex items-center gap-2 py-1.5">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${prof ? prof.dotClass : 'bg-gray-200'}`} />
+                        <span className="text-gray-500 truncate" style={{ fontSize: '12px' }}>{c.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </nav>
 
           {/* Bottom summary */}
@@ -493,8 +634,22 @@ export function AssessmentDashboard({
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <h2 className="text-gray-900" style={{ fontSize: '17px', fontWeight: 500 }}>{role.title}</h2>
                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${gradeBadge.bg} ${gradeBadge.text}`}>{role.grade}</span>
+                  {isAspiring && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700">
+                      <TrendingUp className="w-3 h-3" />
+                      Aspiring from {GRADE_LABELS[actualGrade].split('·')[0].trim()}
+                    </span>
+                  )}
                 </div>
                 <p className="text-gray-500 leading-relaxed" style={{ fontSize: '13px' }}>{role.description}</p>
+                {isAspiring && (
+                  <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: '#FFF8E7', border: '1px solid #FDE68A' }}>
+                    <TrendingUp className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-amber-700" style={{ fontSize: '11px' }}>
+                      You're assessing yourself against <strong>{GRADE_LABELS[role.grade]}</strong> competencies as part of your promotion preparation from <strong>{GRADE_LABELS[actualGrade]}</strong>.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -520,32 +675,55 @@ export function AssessmentDashboard({
           </div>
 
           {/* ── Core UCD scoring table ───────────────────────────────────── */}
-          <div className="px-8 pb-6" ref={coreSectionRef}>
-            <ScoringTable
-              title={`Core UCD Competencies · ${role.grade}`}
-              subtitle="Shared across all UCD roles at this grade"
-              competencies={coreCompetencies}
-              accentColor="#1d365a"
-              accentLight="bg-blue-50"
-              getAssessment={getAssessment}
-              setRating={setRating}
-              setNotes={setNotes}
-            />
-          </div>
-
-          {/* ── Discipline scoring table ─────────────────────────────────── */}
-          <div className="px-8 pb-10" ref={disciplineSectionRef}>
-            <ScoringTable
-              title="Discipline-Specific Competencies"
-              subtitle={`Unique skills for ${role.title}`}
-              competencies={role.disciplineCompetencies}
-              accentColor="#6d28d9"
-              accentLight="bg-violet-50"
-              getAssessment={getAssessment}
-              setRating={setRating}
-              setNotes={setNotes}
-            />
-          </div>
+          {role.isUR ? (
+            /* ── UR: 7 competency group tables ── */
+            urGroups.map((group, idx) => (
+              <div
+                key={group.id}
+                className={`px-4 sm:px-8 ${idx < urGroups.length - 1 ? 'pb-6' : 'pb-10'}`}
+                ref={(el) => { urGroupRefs.current[idx] = el; }}
+              >
+                <ScoringTable
+                  title={`${idx + 1}. ${group.name}`}
+                  subtitle={group.summary}
+                  competencies={group.components}
+                  accentColor={UR_GROUP_COLORS[idx % UR_GROUP_COLORS.length]}
+                  accentLight={UR_GROUP_LIGHTS[idx % UR_GROUP_LIGHTS.length]}
+                  getAssessment={getAssessment}
+                  setRating={setRating}
+                  setNotes={setNotes}
+                />
+              </div>
+            ))
+          ) : (
+            /* ── Design: Core UCD + Discipline tables ── */
+            <>
+              <div className="px-4 sm:px-8 pb-6" ref={coreSectionRef}>
+                <ScoringTable
+                  title={`Core UCD Competencies · ${role.grade}`}
+                  subtitle="Shared across all UCD roles at this grade"
+                  competencies={coreCompetencies}
+                  accentColor="#1d365a"
+                  accentLight="bg-blue-50"
+                  getAssessment={getAssessment}
+                  setRating={setRating}
+                  setNotes={setNotes}
+                />
+              </div>
+              <div className="px-4 sm:px-8 pb-10" ref={disciplineSectionRef}>
+                <ScoringTable
+                  title="Discipline-Specific Competencies"
+                  subtitle={`Unique skills for ${role.title}`}
+                  competencies={role.disciplineCompetencies}
+                  accentColor="#6d28d9"
+                  accentLight="bg-violet-50"
+                  getAssessment={getAssessment}
+                  setRating={setRating}
+                  setNotes={setNotes}
+                />
+              </div>
+            </>
+          )}
 
           {/* Completion banner */}
           {assessedCount === totalCount && (
