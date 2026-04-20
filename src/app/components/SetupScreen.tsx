@@ -81,7 +81,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
         <img src={logo} alt="DE UCD Community" className="h-9 w-auto" />
         <div className="w-px h-6 bg-white/20" />
         <span className="text-white/70 tracking-wide" style={{ fontSize: '13px' }}>
-          Skills Self-Assessment
+          Competencies Self-Assessment
         </span>
       </header>
 
@@ -94,7 +94,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
               className="text-white mb-3"
               style={{ fontSize: '36px', fontWeight: 400, lineHeight: 1.2 }}
             >
-              UCD Skills Self-Assessment
+              UCD Competencies Self-Assessment
             </h1>
             <p className="text-white/60" style={{ fontSize: '16px' }}>
               Reflect on your competencies and identify growth opportunities

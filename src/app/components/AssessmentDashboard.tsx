@@ -150,7 +150,7 @@ export function AssessmentDashboard({
     // Title & meta — positioned after the logo block (logo left-edge 12, max right ~54)
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(14);
-    doc.text('UCD Skills Self-Assessment', 62, 14);
+    doc.text('UCD Competencies Self-Assessment', 62, 14);
     doc.setFontSize(9);
     doc.setTextColor(180, 200, 230);
     doc.text(`${sanitizeForPDF(displayName)}  |  ${sanitizeForPDF(role.title)}  |  ${role.grade}`, 62, 22);
@@ -238,7 +238,7 @@ export function AssessmentDashboard({
   // ── Export Excel ──────────────────────────────────────────────────────────
   const exportExcel = () => {
     const rows: (string | number)[][] = [
-      ['UCD Skills Self-Assessment'],
+      ['UCD Competencies Self-Assessment'],
       [],
       ['Name', displayName],
       ['Role', role.title],
